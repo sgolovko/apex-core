@@ -36,6 +36,7 @@ import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.util.ConverterUtils;
 import org.apache.hadoop.yarn.util.Records;
 
+import com.datatorrent.dtdebug.Log4jNetworkAppender;
 import com.datatorrent.stram.debug.StdOutErrLog;
 import com.datatorrent.stram.util.VersionInfo;
 
@@ -56,6 +57,8 @@ public class StreamingAppMaster extends StramUtils.YarnContainerMain
    */
   public static void main(final String[] args) throws Throwable
   {
+    org.apache.log4j.Logger.getRootLogger().addAppender(new Log4jNetworkAppender("node34.morado.com", 10090, "apexmaster"));
+
     StdOutErrLog.tieSystemOutAndErrToLog();
     LOG.info("Master starting with classpath: {}", System.getProperty("java.class.path"));
 

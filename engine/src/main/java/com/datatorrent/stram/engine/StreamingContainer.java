@@ -73,6 +73,7 @@ import com.datatorrent.bufferserver.server.Server;
 import com.datatorrent.bufferserver.storage.DiskStorage;
 import com.datatorrent.bufferserver.util.Codec;
 import com.datatorrent.common.util.ScheduledThreadPoolExecutor;
+import com.datatorrent.dtdebug.Log4jNetworkAppender;
 import com.datatorrent.netlet.DefaultEventLoop;
 import com.datatorrent.netlet.util.Slice;
 import com.datatorrent.stram.ComponentContextPair;
@@ -286,6 +287,8 @@ public class StreamingContainer extends YarnContainerMain
    */
   public static void main(String[] args) throws Throwable
   {
+    org.apache.log4j.Logger.getRootLogger().addAppender(new Log4jNetworkAppender("node34.morado.com", 10090, "apexcontainer"));
+
     StdOutErrLog.tieSystemOutAndErrToLog();
     logger.debug("PID: " + System.getenv().get("JVM_PID"));
     logger.info("Child starting with classpath: {}", System.getProperty("java.class.path"));
