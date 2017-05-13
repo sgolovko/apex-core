@@ -22,6 +22,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
 import java.lang.reflect.Method;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -41,6 +43,7 @@ import org.apache.log4j.FileAppender;
 import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
+import org.apache.log4j.MDC;
 import org.apache.log4j.PropertyConfigurator;
 import org.apache.log4j.spi.DefaultRepositorySelector;
 import org.apache.log4j.spi.HierarchyEventListener;
@@ -51,6 +54,8 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
+
+import com.datatorrent.stram.plan.logical.LogicalPlan;
 
 import static com.datatorrent.api.Context.DAGContext.LOGGER_APPENDER;
 
@@ -72,6 +77,10 @@ public class LoggerUtil
       return input == null ? "" : input.toString();
     }
   };
+
+  static {
+    initMDCProperties();
+  }
 
   private static class DelegatingLoggerRepository implements LoggerRepository
   {
@@ -463,5 +472,64 @@ public class LoggerUtil
       names.add(((Appender)enumeration.nextElement()).getName());
     }
     return names;
+  }
+
+  /**
+   * Initializes MDC properties
+   */
+  private static void initMDCProperties()
+  {
+    MDC.put("node", getCurrentHost());
+
+    String value = System.getenv("HADOOP_USER_NAME");
+    if (value != null) {
+      MDC.put("user", value);
+    }
+
+    value = System.getenv("CONTAINER_ID");
+    if (value != null) {
+      MDC.put("containerId", value);
+    }
+
+    Properties properties = System.getProperties();
+    String longName = LogicalPlan.APPLICATION_NAME.getLongName();
+    if (properties.contains(longName)) {
+      MDC.put("application", properties.getProperty(longName));
+    }
+
+    if (MDC.get("service") == null) {
+      MDC.put("service", getService());
+    }
+  }
+
+  /**
+   * Returns the service name
+   * @return Service name
+   */
+  private static String getService()
+  {
+    StackTraceElement[] stack = Thread.currentThread().getStackTrace();
+    String mainClass = stack[stack.length - 1].getClassName();
+    if (mainClass.equals("com.datatorrent.stram.cli.ApexCli")) {
+      return "apexclient";
+    } else if (mainClass.equals("com.datatorrent.stram.StreamingAppMaster")) {
+      return "apexmaster";
+    } else if (mainClass.equals("com.datatorrent.stram.engine.StreamingContainer")) {
+      return "apexcontainer";
+    }
+    return "unknown";
+  }
+
+  /**
+   * Returns the current host name
+   * @return The current host name
+   */
+  private static String getCurrentHost()
+  {
+    try {
+      return InetAddress.getLocalHost().getHostName();
+    } catch (UnknownHostException ex) {
+      return "unknown";
+    }
   }
 }
